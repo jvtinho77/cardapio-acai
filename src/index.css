@@ -1,0 +1,137 @@
+
+@import "@fontsource/outfit/300.css";
+@import "@fontsource/outfit/400.css";
+@import "@fontsource/outfit/500.css";
+@import "@fontsource/outfit/600.css";
+@import "@fontsource/outfit/700.css";
+@import "@fontsource/fredoka/300.css";
+@import "@fontsource/fredoka/400.css";
+@import "@fontsource/fredoka/500.css";
+@import "@fontsource/fredoka/600.css";
+@import "@fontsource/fredoka/700.css";
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+ 
+@layer base {
+  :root {
+    /* Main Background: Soft Lilac White */
+    --background: 280 20% 98%; 
+    /* Main Text: Deep Purple Black */
+    --foreground: 270 50% 15%;
+
+    /* Card Background: White */
+    --card: 0 0% 100%;
+    --card-foreground: 270 50% 15%;
+ 
+    /* Popover */
+    --popover: 0 0% 100%;
+    --popover-foreground: 270 50% 15%;
+ 
+    /* Primary: Deep Açaí Purple */
+    --primary: 270 60% 35%;
+    --primary-foreground: 0 0% 100%;
+ 
+    /* Secondary: Fresh Leaf Green */
+    --secondary: 140 40% 50%;
+    --secondary-foreground: 0 0% 100%;
+ 
+    /* Tertiary/Accent: Bright Berry Pink */
+    --tertiary: 330 70% 55%;
+    --tertiary-foreground: 0 0% 100%;
+
+    /* Muted: Soft Purple Gray */
+    --muted: 270 10% 90%;
+    --muted-foreground: 270 20% 40%;
+ 
+    /* Accent: Light Purple Highlight */
+    --accent: 270 30% 95%;
+    --accent-foreground: 270 60% 35%;
+ 
+    /* Destructive: Soft Red */
+    --destructive: 0 70% 60%;
+    --destructive-foreground: 0 0% 98%;
+
+    /* Borders & Inputs */
+    --border: 270 20% 90%;
+    --input: 270 20% 90%;
+    --ring: 270 60% 35%;
+ 
+    --radius: 1rem;
+ 
+    /* Sidebar (if used) */
+    --sidebar-background: 0 0% 98%;
+    --sidebar-foreground: 240 5.3% 26.1%;
+    --sidebar-primary: 240 5.9% 10%;
+    --sidebar-primary-foreground: 0 0% 98%;
+    --sidebar-accent: 240 4.8% 95.9%;
+    --sidebar-accent-foreground: 240 5.9% 10%;
+    --sidebar-border: 220 13% 91%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+ 
+  .dark {
+    --background: 270 40% 10%;
+    --foreground: 0 0% 98%;
+ 
+    --card: 270 40% 12%;
+    --card-foreground: 0 0% 98%;
+ 
+    --popover: 270 40% 12%;
+    --popover-foreground: 0 0% 98%;
+ 
+    --primary: 270 60% 50%;
+    --primary-foreground: 0 0% 100%;
+ 
+    --secondary: 140 40% 50%;
+    --secondary-foreground: 0 0% 100%;
+ 
+    --muted: 270 20% 20%;
+    --muted-foreground: 270 20% 70%;
+ 
+    --accent: 270 40% 20%;
+    --accent-foreground: 0 0% 98%;
+ 
+    --destructive: 0 62.8% 30.6%;
+    --destructive-foreground: 0 0% 98%;
+ 
+    --border: 270 20% 20%;
+    --input: 270 20% 20%;
+    --ring: 270 60% 50%;
+    --sidebar-background: 240 5.9% 10%;
+    --sidebar-foreground: 240 4.8% 95.9%;
+    --sidebar-primary: 224.3 76.3% 48%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 240 3.7% 15.9%;
+    --sidebar-accent-foreground: 240 4.8% 95.9%;
+    --sidebar-border: 240 3.7% 15.9%;
+    --sidebar-ring: 217.2 91.2% 59.8%;
+  }
+}
+ 
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground font-sans;
+  }
+  h1, h2, h3, h4, h5, h6 {
+    @apply font-heading;
+  }
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+}
+::-webkit-scrollbar-track {
+  @apply bg-transparent;
+}
+::-webkit-scrollbar-thumb {
+  @apply bg-gray-300 rounded-full;
+}
+::-webkit-scrollbar-thumb:hover {
+  @apply bg-gray-400;
+}
