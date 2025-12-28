@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useToast } from '@/hooks/use-toast';
 import { AcaiSize, AcaiBase, Complement, Location, CupOrder } from './types';
@@ -11,6 +11,7 @@ import { StepQuantity } from './steps/StepQuantity';
 import { ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { salvarPedido } from '@/services/orderService';
+import { getStoreStatus } from '@/services/settingsService';
 import { useSearchParams } from 'react-router-dom';
 import {
     Dialog,
@@ -36,6 +37,7 @@ export function AcaiWizard() {
     const [currentStep, setCurrentStep] = useState(0);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [isSuccess, setIsSuccess] = useState(false);
+    const [isStoreOpen, setIsStoreOpen] = useState<boolean | null>(null);
 
     // Order State
     const [whatsapp, setWhatsapp] = useState('');
@@ -57,6 +59,15 @@ export function AcaiWizard() {
     const [showTrocoDialog, setShowTrocoDialog] = useState(false);
     const [needsTroco, setNeedsTroco] = useState<boolean | null>(null);
     const [valorTroco, setValorTroco] = useState<string>('');
+
+    // Check store status on mount
+    useEffect(() => {
+        async function checkStoreStatus() {
+            const status = await getStoreStatus();
+            setIsStoreOpen(status);
+        }
+        checkStoreStatus();
+    }, []);
 
     // Helpers
     const currentCupIndex = completedCups.length + 1;
@@ -224,6 +235,37 @@ export function AcaiWizard() {
             setIsSubmitting(false);
         }
     };
+
+    // Loading state while checking store status
+    if (isStoreOpen === null) {
+        return (
+            <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="text-purple-400 text-center">
+                    <div className="w-12 h-12 border-4 border-purple-200 border-t-purple-600 rounded-full animate-spin mx-auto mb-4"></div>
+                    <p className="text-sm font-medium">Carregando...</p>
+                </div>
+            </div>
+        );
+    }
+
+    // Store closed message
+    if (!isStoreOpen) {
+        return (
+            <div className="flex flex-col items-center justify-center min-h-[60vh] text-center space-y-6 animate-in zoom-in duration-500 p-6">
+                <div className="w-24 h-24 bg-amber-100 rounded-full flex items-center justify-center shadow-lg shadow-amber-50">
+                    <AlertCircle className="text-amber-600 w-12 h-12" />
+                </div>
+                <div className="space-y-2">
+                    <h2 className="text-3xl font-bold text-gray-800">Ops! Estamos Fechados</h2>
+                    <p className="text-gray-500 mt-2 max-w-sm">No momento não estamos aceitando pedidos.</p>
+                    <p className="text-purple-600 font-medium mt-1 text-lg">Abriremos em breve!</p>
+                </div>
+                <Button onClick={() => window.location.reload()} variant="outline" className="mt-4 border-purple-200 text-purple-700 hover:bg-purple-50">
+                    Tentar novamente
+                </Button>
+            </div>
+        );
+    }
 
     if (isSuccess) {
         return (

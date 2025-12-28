@@ -153,93 +153,44 @@ export function StepLocation({ onSelect, currentLocation }: StepLocationProps) {
             </div>
 
             <div className="space-y-4">
-                {/* Mode Toggle Hooks */}
-                <div className="flex p-1 bg-purple-50 rounded-xl">
-                    <button
-                        onClick={() => setIsManual(false)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${!isManual ? 'bg-white text-primary shadow-sm' : 'text-purple-400 hover:text-purple-600'}`}
-                    >
-                        <MapPin size={18} />
-                        Mapa
-                    </button>
-                    <button
-                        onClick={() => setIsManual(true)}
-                        className={`flex-1 flex items-center justify-center gap-2 py-2 text-sm font-medium rounded-lg transition-all ${isManual ? 'bg-white text-primary shadow-sm' : 'text-purple-400 hover:text-purple-600'}`}
-                    >
-                        <Keyboard size={18} />
-                        Manual
-                    </button>
-                </div>
+                <div className="space-y-4 animate-in fade-in duration-300">
+                    <div className="relative h-[300px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-md">
+                        <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
 
-                {!isManual ? (
-                    <div className="space-y-4 animate-in fade-in duration-300">
-                        <div className="relative h-[300px] w-full rounded-xl overflow-hidden border border-gray-200 shadow-md">
-                            <div ref={mapRef} style={{ width: '100%', height: '100%' }} />
-
-                            {!currentLocation?.lat && !loading && !markerInstance.current && (
-                                <div className="absolute top-4 left-0 right-0 z-[400] flex justify-center pointer-events-none">
-                                    <p className="bg-white/90 p-2 rounded-lg text-xs text-gray-600 shadow-md pointer-events-auto">
-                                        Toque no mapa ou use o botão abaixo
-                                    </p>
-                                </div>
-                            )}
-                        </div>
-
-                        {error && (
-                            <div className="text-sm text-red-500 text-center bg-red-50 p-2 rounded-lg border border-red-100">
-                                {error}
-                            </div>
-                        )}
-
-                        <Button
-                            onClick={handleGetLocation}
-                            className="w-full gap-2 text-white font-bold h-12 rounded-xl shadow-lg shadow-purple-200"
-                            disabled={loading}
-                        >
-                            {loading ? (
-                                "Buscando..."
-                            ) : (
-                                <>
-                                    <Navigation size={20} />
-                                    Usar Minha Localização Atual
-                                </>
-                            )}
-                        </Button>
-                    </div>
-                ) : (
-                    <div className="space-y-3 animate-in fade-in duration-300">
-                        <div className="space-y-2">
-                            <label className="text-sm font-semibold text-gray-700 flex items-center gap-2">
-                                <Keyboard size={16} className="text-purple-500" />
-                                Endereço de Entrega
-                            </label>
-                            <Textarea
-                                placeholder="Rua, número, bairro e complementos..."
-                                value={manualAddress}
-                                onChange={(e) => handleManualAddressChange(e.target.value)}
-                                className="min-h-[120px] bg-gray-50 border-gray-200 focus:border-primary focus:ring-primary/20 rounded-xl text-base"
-                                autoFocus
-                            />
-                        </div>
-                        <div className="bg-blue-50 border border-blue-100 rounded-xl p-4 flex gap-3">
-                            <div className="bg-blue-100 p-2 rounded-lg h-fit text-blue-600">
-                                <MapPin size={18} />
-                            </div>
-                            <div className="space-y-1">
-                                <h4 className="text-sm font-bold text-blue-900">Dica de Entrega</h4>
-                                <p className="text-xs text-blue-700 leading-relaxed">
-                                    Quanto mais detalhes você colocar, mais rápido o entregador te encontra!
+                        {!currentLocation?.lat && !loading && !markerInstance.current && (
+                            <div className="absolute top-4 left-0 right-0 z-[400] flex justify-center pointer-events-none">
+                                <p className="bg-white/90 p-2 rounded-lg text-xs text-gray-600 shadow-md pointer-events-auto">
+                                    Toque no mapa ou use o botão abaixo
                                 </p>
                             </div>
-                        </div>
+                        )}
                     </div>
-                )}
+
+                    {error && (
+                        <div className="text-sm text-red-500 text-center bg-red-50 p-2 rounded-lg border border-red-100">
+                            {error}
+                        </div>
+                    )}
+
+                    <Button
+                        onClick={handleGetLocation}
+                        className="w-full gap-2 text-white font-bold h-12 rounded-xl shadow-lg shadow-purple-200"
+                        disabled={loading}
+                    >
+                        {loading ? (
+                            "Buscando..."
+                        ) : (
+                            <>
+                                <Navigation size={20} />
+                                Usar Minha Localização Atual
+                            </>
+                        )}
+                    </Button>
+                </div>
             </div>
 
             <p className="text-xs text-center text-gray-400">
-                {!isManual
-                    ? "Você pode arrastar o pino para ajustar sua localização exata."
-                    : "Preencha o endereço completo para garantir a entrega."}
+                Você pode arrastar o pino para ajustar sua localização exata.
             </p>
         </div>
     );

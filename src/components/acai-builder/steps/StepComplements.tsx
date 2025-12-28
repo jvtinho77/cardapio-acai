@@ -1,32 +1,12 @@
+import { useState, useEffect } from 'react';
 import { Complement } from '../types';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
-import { Plus, Check } from 'lucide-react';
+import { Plus, Check, Loader2 } from 'lucide-react';
 import { Textarea } from '@/components/ui/textarea';
+import { getComplementsFromSettings } from '@/services/settingsService';
 
-const COMPLEMENTS_DATA: Complement[] = [
-    // Fruits
-    { id: 'banana', label: 'Banana', category: 'fruit' },
-    { id: 'morango', label: 'Morango', category: 'fruit' },
-    { id: 'uva', label: 'Uva', category: 'fruit' },
-    { id: 'kiwi', label: 'Kiwi', category: 'fruit' },
-    { id: 'manga', label: 'Manga', category: 'fruit' },
-
-    // Mousses
-    { id: 'leite-po', label: 'Leite em Pó', category: 'mousse' },
-    { id: 'leite-cond', label: 'Leite Condensado', category: 'mousse' },
-    { id: 'nutella', label: 'Creme de Avelã', category: 'mousse' },
-    { id: 'pacoca', label: 'Paçoca', category: 'mousse' },
-    { id: 'ovomaltine', label: 'Ovomaltine', category: 'mousse' },
-
-    // Crunch & Others
-    { id: 'granola', label: 'Granola', category: 'crunch' },
-    { id: 'choco-ball', label: 'Choco Ball', category: 'crunch' },
-    { id: 'sukrilhos', label: 'Sucrilhos', category: 'crunch' },
-    { id: 'jujuba', label: 'Jujuba', category: 'other' },
-    { id: 'bis', label: 'Bis', category: 'other' },
-];
 
 interface StepComplementsProps {
     selected: Complement[];
@@ -36,6 +16,24 @@ interface StepComplementsProps {
 }
 
 export function StepComplements({ selected, onUpdate, notes, onNotesChange }: StepComplementsProps) {
+    const [complements, setComplements] = useState<Complement[]>([]);
+    const [isLoading, setIsLoading] = useState(true);
+
+    useEffect(() => {
+        async function fetchComplements() {
+            setIsLoading(true);
+            try {
+                const data = await getComplementsFromSettings();
+                setComplements(data);
+            } catch (error) {
+                console.error("Error fetching complements:", error);
+            } finally {
+                setIsLoading(false);
+            }
+        }
+        fetchComplements();
+    }, []);
+
     const toggleComplement = (complement: Complement) => {
         const exists = selected.find(c => c.id === complement.id);
         if (exists) {
@@ -48,12 +46,31 @@ export function StepComplements({ selected, onUpdate, notes, onNotesChange }: St
     const isSelected = (id: string) => !!selected.find(c => c.id === id);
 
     const renderComplementList = (category: string | string[]) => {
-        const items = COMPLEMENTS_DATA.filter(c =>
+        const items = complements.filter(c =>
             Array.isArray(category) ? category.includes(c.category) : c.category === category
         );
 
+        if (isLoading) {
+            return (
+                <div className="flex flex-col items-center justify-center py-10 space-y-3 text-purple-400">
+                    <Loader2 className="w-8 h-8 animate-spin" />
+                    <p className="text-sm font-medium">Carregando...</p>
+                </div>
+            );
+        }
+
+        if (items.length === 0) {
+            return (
+                <div className="text-center py-10">
+                    <p className="text-muted-foreground italic text-sm">Nenhum item disponível nesta categoria.</p>
+                </div>
+            );
+        }
+
+
+
         return (
-            <div className="grid grid-cols-1 gap-3 mt-4">
+            <div className="grid grid-cols-2 gap-2 mt-4">
                 {items.map(item => {
                     const selected = isSelected(item.id);
                     return (
@@ -61,32 +78,26 @@ export function StepComplements({ selected, onUpdate, notes, onNotesChange }: St
                             key={item.id}
                             onClick={() => toggleComplement(item)}
                             className={cn(
-                                "flex items-center justify-between p-3 rounded-xl border transition-all cursor-pointer select-none active:scale-[0.98]",
+                                "flex items-center gap-2 p-2.5 rounded-lg border transition-all cursor-pointer select-none active:scale-[0.98] min-h-[44px]",
                                 selected
                                     ? "border-primary bg-purple-50 shadow-sm ring-1 ring-primary"
                                     : "border-gray-100 bg-white hover:border-purple-100 hover:bg-gray-50"
                             )}
                         >
-                            <div className="flex items-center gap-3 w-full">
-                                <div className={cn(
-                                    "w-10 h-10 rounded-full flex items-center justify-center transition-all",
-                                    selected ? "bg-primary text-white" : "bg-gray-100 text-gray-300"
-                                )}>
-                                    {selected ? <Check size={20} /> : <Plus size={20} />}
-                                </div>
-                                <span className={cn(
-                                    "font-medium flex-1",
-                                    selected ? "text-primary font-bold" : "text-gray-700"
-                                )}>
-                                    {item.label}
-                                </span>
-                                {selected && (
-                                    <span className="text-xs text-primary font-medium px-2 py-1 bg-white/50 rounded-lg">
-                                        Selecionado
-                                    </span>
-                                )}
+                            <div className={cn(
+                                "w-7 h-7 rounded-full flex items-center justify-center transition-all shrink-0",
+                                selected ? "bg-primary text-white" : "bg-gray-100 text-gray-300"
+                            )}>
+                                {selected ? <Check size={14} /> : <Plus size={14} />}
                             </div>
+                            <span className={cn(
+                                "text-xs font-medium leading-tight",
+                                selected ? "text-primary font-bold" : "text-gray-700"
+                            )}>
+                                {item.label}
+                            </span>
                         </div>
+
                     );
                 })}
             </div>
@@ -142,20 +153,6 @@ export function StepComplements({ selected, onUpdate, notes, onNotesChange }: St
                     <span>Adicionais custam R$ 2,50 cada.</span>
                 </div>
             )}
-
-            {/* Observation Field */}
-            <div className="space-y-2 pt-4 border-t border-gray-100">
-                <label htmlFor="notes" className="text-sm font-semibold text-gray-700">
-                    Observações (Opcional)
-                </label>
-                <Textarea
-                    id="notes"
-                    placeholder="Ex: Sem leite em pó, capricha na nutella..."
-                    value={notes}
-                    onChange={(e) => onNotesChange?.(e.target.value)}
-                    className="min-h-[80px] text-sm bg-gray-50 border-gray-200 focus:border-primary focus:ring-primary/20"
-                />
-            </div>
         </div>
     );
 }
