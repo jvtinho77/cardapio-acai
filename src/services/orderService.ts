@@ -15,11 +15,16 @@ export interface NovoPedido {
     base?: any;
     complementos?: any[];
     localizacao?: any;
+    itens_estatisticos?: any[]; // Keep old array structure if needed for metrics
+    itens_json?: any[]; // New consolidated structure
+    resumo?: string; // New readable summary
 
     // Legacy/CRM support (sending a summary item)
     itens: ItemPedido[];
 
     tableId?: string;
+    troco_para?: number;
+    whatsapp_cliente?: string;
 }
 
 export const salvarPedido = async (pedido: NovoPedido) => {
@@ -46,9 +51,11 @@ export const salvarPedido = async (pedido: NovoPedido) => {
             tamanho: pedido.tamanho,
             base: pedido.base,
             complementos: pedido.complementos,
-            localizacao: pedido.localizacao
-
-            // REMOVED 'itens' as per user request
+            localizacao: pedido.localizacao,
+            itens: pedido.itens_json, // Consolidating everything here
+            resumo: pedido.resumo,
+            troco_para: pedido.troco_para,
+            whatsapp_cliente: pedido.whatsapp_cliente
         })
         .select()
         .single();

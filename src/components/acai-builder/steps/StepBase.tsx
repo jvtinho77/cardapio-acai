@@ -1,5 +1,5 @@
 
-import { AcaiBase } from '../AcaiWizard';
+import { AcaiBase } from '../types';
 import { cn } from '@/lib/utils';
 import { CircleDot, Circle } from 'lucide-react';
 

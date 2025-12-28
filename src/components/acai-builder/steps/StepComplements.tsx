@@ -1,4 +1,4 @@
-import { Complement } from '../AcaiWizard';
+import { Complement } from '../types';
 import { cn } from '@/lib/utils';
 import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';

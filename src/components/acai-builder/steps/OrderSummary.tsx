@@ -1,5 +1,5 @@
 import { ShoppingBag } from "lucide-react";
-import { CupOrder } from "../AcaiWizard";
+import { CupOrder } from "../types";
 
 interface OrderSummaryProps {
     cups?: CupOrder[];

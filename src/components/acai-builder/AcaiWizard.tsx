@@ -1,24 +1,27 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { StepSize, AcaiSize } from './steps/StepSize';
-import { StepBase, AcaiBase } from './steps/StepBase';
-import { StepComplements, Complement } from './steps/StepComplements';
-import { StepLocation, Location } from './steps/StepLocation';
+import { useToast } from '@/hooks/use-toast';
+import { AcaiSize, AcaiBase, Complement, Location, CupOrder } from './types';
+import { StepSize } from './steps/StepSize';
+import { StepBase } from './steps/StepBase';
+import { StepComplements } from './steps/StepComplements';
+import { StepLocation } from './steps/StepLocation';
 import { OrderSummary } from './steps/OrderSummary';
 import { StepQuantity } from './steps/StepQuantity';
 import { ArrowLeft, Check } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { salvarPedido } from '@/services/orderService';
 import { useSearchParams } from 'react-router-dom';
-import { useToast } from '@/hooks/use-toast';
-
-// Define the structure for a single cup
-export interface CupOrder {
-    size: AcaiSize | null;
-    base: AcaiBase | null;
-    complements: Complement[];
-    notes?: string;
-}
+import {
+    Dialog,
+    DialogContent,
+    DialogHeader,
+    DialogTitle,
+    DialogDescription,
+    DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { AlertCircle, Coins, Wallet } from "lucide-react";
 
 // Steps definition
 // 0: Quantity/Name, 1: Size, 2: Base, 3: Complements, 4: Location, 5: Summary
@@ -35,7 +38,7 @@ export function AcaiWizard() {
     const [isSuccess, setIsSuccess] = useState(false);
 
     // Order State
-    const [customerName, setCustomerName] = useState('');
+    const [whatsapp, setWhatsapp] = useState('');
     const [quantity, setQuantity] = useState(1);
 
     // Multi-cup management
@@ -50,13 +53,18 @@ export function AcaiWizard() {
 
     const [location, setLocation] = useState<Location | undefined>(undefined);
 
+    // Troco State
+    const [showTrocoDialog, setShowTrocoDialog] = useState(false);
+    const [needsTroco, setNeedsTroco] = useState<boolean | null>(null);
+    const [valorTroco, setValorTroco] = useState<string>('');
+
     // Helpers
     const currentCupIndex = completedCups.length + 1;
     const isBuildingCup = currentStep >= 1 && currentStep <= 3; // Size, Base, Complements
 
     const handleNext = async () => {
         // Validation logic
-        if (currentStep === 0 && (!customerName || quantity < 1)) return;
+        if (currentStep === 0 && quantity < 1) return;
         if (currentStep === 1 && !currentCup.size) return;
         if (currentStep === 2 && !currentCup.base) return;
 
@@ -98,7 +106,7 @@ export function AcaiWizard() {
 
         // Summary Step (Final Submit)
         if (currentStep === 5) {
-            await handleSubmitOrder();
+            setShowTrocoDialog(true);
             return;
         }
 
@@ -131,6 +139,11 @@ export function AcaiWizard() {
     const handleSubmitOrder = async () => {
         setIsSubmitting(true);
         try {
+            // Clean WhatsApp Number
+            let cleanedWhatsapp = whatsapp.replace(/\D/g, '');
+            if (cleanedWhatsapp && !cleanedWhatsapp.startsWith('55')) {
+                cleanedWhatsapp = '55' + cleanedWhatsapp;
+            }
             // Calculate Total
             const total = completedCups.reduce((acc, cup) => {
                 const basePrice = cup.size?.price || 0;
@@ -139,23 +152,63 @@ export function AcaiWizard() {
                 return acc + basePrice + extraPrice;
             }, 0);
 
-            // Construct Aggregate Data as Arrays
+            // Construct Aggregate Data as Arrays (Backward Compatibility)
             const sizes = completedCups.map(c => c.size);
             const bases = completedCups.map(c => c.base);
             const complementsList = completedCups.map(c => c.complements);
 
+            // Construct Consolidated Data (New CRM friendly)
+            const itensConsolidados = completedCups.map((cup, idx) => ({
+                item: `Copo ${idx + 1}`,
+                tamanho: cup.size?.label,
+                base: cup.base?.label,
+                complementos: cup.complements.map(c => c.label), // Save as array
+                observacao: cup.notes || "",
+                preco: (cup.size?.price || 0) + (Math.max(0, cup.complements.length - 3) * 2.50)
+            }));
+
+            // Construct Readable Summary
+            let resumoParts = [];
+
+            // 1. Add Location Info
+            if (location?.isManual && location.address) {
+                resumoParts.push(`📍 ENDEREÇO: ${location.address}`);
+            } else if (location?.lat) {
+                resumoParts.push(`📍 LOCALIZAÇÃO: Via GPS/Mapa`);
+            }
+
+            // 2. Add Cups Info
+            const cupsSummary = completedCups.map((cup, idx) => {
+                const comps = cup.complements.map(c => c.label).join(", ");
+                return `Copo ${idx + 1}: ${cup.size?.label}, ${cup.base?.label}${comps ? ` (${comps})` : ""}${cup.notes ? ` [Obs: ${cup.notes}]` : ""}`;
+            }).join(" | ");
+            resumoParts.push(cupsSummary);
+
+            // 3. Add Payment Info
+            if (needsTroco && valorTroco) {
+                resumoParts.push(`💵 TROCO PARA: R$ ${valorTroco}`);
+            }
+
+            const resumoText = resumoParts.join(" | ");
+
             await salvarPedido({
-                cliente_nome: customerName,
+                cliente_nome: whatsapp, // Keep as name for now for backward compatibility or metrics
                 mesa: "Delivery",
                 total: total,
 
-                // Saving Arrays! 
+                // Old structure
                 tamanho: sizes,
                 base: bases,
                 complementos: complementsList,
                 localizacao: location,
 
-                itens: [],
+                // New structure
+                itens_json: itensConsolidados,
+                resumo: resumoText,
+                troco_para: needsTroco ? parseFloat(valorTroco) : undefined,
+                whatsapp_cliente: cleanedWhatsapp,
+
+                itens: [], // Legacy field from interface
                 tableId: tableId || undefined
             });
 
@@ -181,7 +234,7 @@ export function AcaiWizard() {
                 <div>
                     <h2 className="text-3xl font-bold text-gray-800">Pedido Realizado!</h2>
                     <p className="text-gray-500 mt-2">A cozinha já vai começar o preparo.</p>
-                    {customerName && <p className="text-purple-600 font-medium mt-1 text-lg">Obrigado, {customerName}!</p>}
+                    <p className="text-purple-600 font-medium mt-1 text-lg">Muito obrigado!</p>
                 </div>
                 <Button onClick={() => window.location.reload()} variant="outline" className="mt-4 border-purple-200 text-purple-700 hover:bg-purple-50">
                     Fazer novo pedido
@@ -232,9 +285,9 @@ export function AcaiWizard() {
                     >
                         {currentStep === 0 && (
                             <StepQuantity
-                                name={customerName}
+                                whatsapp={whatsapp}
                                 quantity={quantity}
-                                onUpdate={(n, q) => { setCustomerName(n); setQuantity(q); }}
+                                onUpdate={(w, q) => { setWhatsapp(w); setQuantity(q); }}
                                 onNext={handleNext}
                             />
                         )}
@@ -308,7 +361,7 @@ export function AcaiWizard() {
                     <Button
                         onClick={handleNext}
                         className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-purple-200"
-                        disabled={!location}
+                        disabled={!location || (location.isManual && !location.address?.trim()) || (!location.isManual && !location.lat)}
                     >
                         Ver Resumo
                     </Button>
@@ -325,6 +378,89 @@ export function AcaiWizard() {
                     </Button>
                 )}
             </div>
+
+            {/* Change (Troco) Dialog */}
+            <Dialog open={showTrocoDialog} onOpenChange={setShowTrocoDialog}>
+                <DialogContent className="sm:max-w-md rounded-3xl border-none">
+                    <DialogHeader>
+                        <DialogTitle className="text-2xl font-bold text-center text-primary flex items-center justify-center gap-2">
+                            <Coins className="text-amber-500" />
+                            Precisa de Troco?
+                        </DialogTitle>
+                        <DialogDescription className="text-center text-base">
+                            Como será a forma de pagamento em dinheiro?
+                        </DialogDescription>
+                    </DialogHeader>
+
+                    <div className="py-6 space-y-6">
+                        <div className="grid grid-cols-2 gap-4">
+                            <button
+                                onClick={() => setNeedsTroco(false)}
+                                className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${needsTroco === false ? 'border-primary bg-purple-50' : 'border-gray-100 hover:border-purple-100'}`}
+                            >
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${needsTroco === false ? 'bg-primary text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                    <Wallet size={24} />
+                                </div>
+                                <span className={`font-bold ${needsTroco === false ? 'text-primary' : 'text-gray-600'}`}>Não Preciso</span>
+                            </button>
+
+                            <button
+                                onClick={() => setNeedsTroco(true)}
+                                className={`flex flex-col items-center gap-3 p-6 rounded-2xl border-2 transition-all ${needsTroco === true ? 'border-primary bg-purple-50' : 'border-gray-100 hover:border-purple-100'}`}
+                            >
+                                <div className={`w-12 h-12 rounded-full flex items-center justify-center ${needsTroco === true ? 'bg-amber-500 text-white' : 'bg-gray-100 text-gray-400'}`}>
+                                    <Coins size={24} />
+                                </div>
+                                <span className={`font-bold ${needsTroco === true ? 'text-amber-600 border-amber-600' : 'text-gray-600'}`}>Preciso</span>
+                            </button>
+                        </div>
+
+                        <AnimatePresence>
+                            {needsTroco && (
+                                <motion.div
+                                    initial={{ opacity: 0, height: 0 }}
+                                    animate={{ opacity: 1, height: 'auto' }}
+                                    exit={{ opacity: 0, height: 0 }}
+                                    className="space-y-3 overflow-hidden"
+                                >
+                                    <label className="text-sm font-bold text-gray-700 block ml-1">
+                                        Troco para quanto? (Ex: 100)
+                                    </label>
+                                    <div className="relative">
+                                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 font-bold">R$</span>
+                                        <Input
+                                            type="number"
+                                            placeholder="0,00"
+                                            value={valorTroco}
+                                            onChange={(e) => setValorTroco(e.target.value)}
+                                            className="pl-12 h-14 text-xl font-bold bg-gray-50 border-gray-200 focus:border-primary focus:ring-primary/20 rounded-xl"
+                                        />
+                                    </div>
+                                    <div className="flex gap-2 items-start bg-amber-50 p-3 rounded-xl border border-amber-100">
+                                        <AlertCircle size={16} className="text-amber-600 mt-0.5 shrink-0" />
+                                        <p className="text-xs text-amber-800">
+                                            O entregador levará o troco calculado com base no valor total do pedido.
+                                        </p>
+                                    </div>
+                                </motion.div>
+                            )}
+                        </AnimatePresence>
+                    </div>
+
+                    <DialogFooter className="sm:justify-start">
+                        <Button
+                            onClick={async () => {
+                                setShowTrocoDialog(false);
+                                await handleSubmitOrder();
+                            }}
+                            className="w-full h-14 text-lg font-bold rounded-xl shadow-lg shadow-green-200 bg-green-500 hover:bg-green-600"
+                            disabled={needsTroco === null || (needsTroco && !valorTroco) || isSubmitting}
+                        >
+                            {isSubmitting ? 'Enviando...' : 'Confirmar e Enviar'}
+                        </Button>
+                    </DialogFooter>
+                </DialogContent>
+            </Dialog>
         </div>
     );
 }

@@ -2,11 +2,7 @@
 import { cn } from '@/lib/utils';
 import { CupIcon } from '../icons/CupIcon';
 
-export interface AcaiSize {
-    id: string;
-    label: string;
-    price: number;
-}
+import { AcaiSize } from '../types';
 
 const SIZES: AcaiSize[] = [
     { id: '300', label: '300ml', price: 15.00 },
